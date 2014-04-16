@@ -1,4 +1,4 @@
--module(echo).
+-module(echo_server).
 
 -export([start/1]).
 

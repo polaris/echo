@@ -2,7 +2,7 @@
 {application, echo,
   [{description, "Erlang TCP echo"},
     {vsn, "0.1.0"},
-    {modules, [echo_app, echo_sup]},
+    {modules, []},
   {registered, [echo_sup]},
   {applications, [kernel, stdlib]},
   {mod, {echo_app, []}}

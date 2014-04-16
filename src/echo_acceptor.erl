@@ -36,7 +36,7 @@ handle_call(_Request, _From, State) ->
 handle_cast(accept, Listen) ->
     case gen_tcp:accept(Listen) of
     {ok, Client} ->
-      Pid = spawn(fun() -> echo:start(Client) end),
+      Pid = spawn(fun() -> echo_server:start(Client) end),
       gen_tcp:controlling_process(Client, Pid),
       gen_server:cast(self(), accept),
       {noreply, Listen};
