@@ -3,6 +3,8 @@ echo
 
 A trivial echo program written in Erlang.
 
+[![Build Status](https://travis-ci.org/polaris/echo.svg?branch=master)](https://travis-ci.org/polaris/echo)
+
 
 Build
 -----
