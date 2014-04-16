@@ -14,8 +14,8 @@ Run
 to compile echo.
 
 
-Control
--------
+Run
+---
 
 Start echo on port Port
 
