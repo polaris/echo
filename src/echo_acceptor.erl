@@ -4,7 +4,8 @@
 
 -define(SERVER, ?MODULE).
 
--export([start/1,
+-export([start_link/0,
+         listen/1,
          stop/0]).
 
 -export([init/1,
@@ -14,44 +15,51 @@
          terminate/2,
          code_change/3]).
 
-start(Port) ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [Port], []).
+-record(acceptor_state, {listen_port = undefined}).
+
+start_link() ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 stop() ->
   gen_server:cast(?MODULE, stop).
 
-init([Port]) ->
-  Options = [binary, {packet, raw}, {active, true}, {reuseaddr, true}],
-  case gen_tcp:listen(Port, Options) of
-    {ok, Listen} ->
-      gen_server:cast(?MODULE, accept),
-      {ok, Listen};
-    {error, Reason} ->
-      {stop, Reason}
-  end.
+listen(Port) ->
+  gen_server:cast(?MODULE, {listen, Port}).
+
+init([]) ->
+  {ok, #acceptor_state{}}.
 
 handle_call(_Request, _From, State) ->
   {noreply, State}.
 
-handle_cast(accept, Listen) ->
+handle_cast({listen, Port}, State) ->
+  Options = [binary, {packet, raw}, {active, true}, {reuseaddr, true}],
+  case gen_tcp:listen(Port, Options) of
+    {ok, Listen} ->
+      gen_server:cast(?MODULE, accept),
+      {noreply, State#acceptor_state{listen_port=Listen}};
+    {error, _} ->
+      {stop, error, State}
+  end;
+handle_cast(accept, #acceptor_state{listen_port=Listen} = State) ->
     case gen_tcp:accept(Listen) of
     {ok, Client} ->
       Pid = spawn(fun() -> echo_server:start(Client) end),
       gen_tcp:controlling_process(Client, Pid),
       gen_server:cast(self(), accept),
-      {noreply, Listen};
+      {noreply, State};
     {error, closed} ->
-      {stop, normal, Listen};
+      {stop, normal, State};
     {error, timeout} ->
       io:format("accept failed: timeout~n"),
-      {stop, error, Listen};
-    {error, _} ->
-      io:format("accept failed: posix error~n"),
-      {stop, error, Listen}
+      {stop, error, State};
+    {error, Reason} ->
+      io:format("accept failed: ~p~n", [Reason]),
+      {stop, error, State}
   end;
-handle_cast(stop, Listen) ->
+handle_cast(stop, #acceptor_state{listen_port=Listen} = State) ->
   gen_tcp:close(Listen),
-  {stop, normal, Listen}.
+  {stop, normal, State}.
 
 handle_info(_Info, State) ->
   {noreply, State}.
