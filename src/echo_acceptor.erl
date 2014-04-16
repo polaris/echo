@@ -1,4 +1,4 @@
--module(echo_server).
+-module(echo_acceptor).
 
 -behaviour(gen_server).
 
